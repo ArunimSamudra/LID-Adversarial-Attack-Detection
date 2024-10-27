@@ -21,25 +21,30 @@ def main(parser):
     script_args = parser.parse_args()
     model_name_base = os.path.basename(script_args.model_name)
 
-    layers = [i for i in range(1, 2)]
+    layers = [i for i in range(32)]
     p_value_for_layers = []
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     for layer in layers:
         # Load data
-        attack = torch.load(f"../output_tensors/{model_name_base}_all_layer_{layer}_perturbed_text.pt", map_location=device)
-        original = torch.load(f"../output_tensors/{model_name_base}_all_layer_{layer}_original_text.pt", map_location=device)
-        labels = torch.load(f"../output_tensors/{model_name_base}_all_layer_{layer}_original_output.pt", map_location=device)
+        attack = torch.load(f"../output_tensors/{model_name_base}_all_layer_{layer}_perturbed_text.pt", map_location=device, weights_only=True)
+        original = torch.load(f"../output_tensors/{model_name_base}_all_layer_{layer}_original_text.pt", map_location=device, weights_only=True)
+        labels = torch.load(f"../output_tensors/{model_name_base}_all_layer_{layer}_original_output.pt", map_location=device, weights_only=True)
+        labels = torch.load(f"../output_tensors_local/{model_name_base}_all_layer_{layer}_result_type.pt",
+                            map_location=device, weights_only=True)
 
-        # Split data into training and testing sets
-        test_idxs = [i for i in range(original.shape[0]) if i < 5]
-        train_idxs = [i for i in range(original.shape[0]) if i not in test_idxs]
+        # Split indices for train and test
+        total_samples = original.shape[0]
+        test_idxs = np.random.choice(total_samples, size=int(0.2 * total_samples), replace=False)
+        train_idxs = [i for i in range(total_samples) if i not in test_idxs]
 
+        # Train data with only clean samples
         train_pd = original[train_idxs, :].cpu().numpy().astype('float32')
         train_labels = labels[train_idxs]
 
+        # Test data with unclean samples
         test_pd = np.array(attack[test_idxs, :]).astype('float32')
-        test_gt = original[test_idxs, :].cpu().numpy().astype('float32')
+        # test_gt = original[test_idxs, :].cpu().numpy().astype('float32')
         test_labels = labels[test_idxs]
 
         # Prepare correct examples batch
@@ -51,6 +56,7 @@ def main(parser):
 
         # Calculate average LID for train and test samples
         k_list = [min(correct_batch.shape[0] - 1, 10)]  # Adjust k as needed
+        #k_list = [correct_batch.shape[0] - 1]  # Adjust k as needed
 
         # Compute LID for test samples
         lids_test = [compute_lid(np.array([x]), correct_batch, k_list) for x in test_pd]
