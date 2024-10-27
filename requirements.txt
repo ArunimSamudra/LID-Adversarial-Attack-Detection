@@ -1,0 +1,10 @@
+transformers
+huggingface_hub
+bitsandbytes
+textattack
+tensorflow_hub
+nltk
+tqdm
+pandas
+datasets
+accelerate
