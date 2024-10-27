@@ -147,7 +147,7 @@ def main(parser):
 
 
 if __name__ == '__main__':
-    os.environ['HF_TOKEN'] = "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"
+    os.environ['HF_TOKEN'] = "my token"
     # Log in using the token from environment variables
     huggingface_token = os.environ.get('HF_TOKEN')
     login(token=huggingface_token)
