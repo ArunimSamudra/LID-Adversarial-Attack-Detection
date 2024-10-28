@@ -1,3 +1,5 @@
+numpy
+scikit-learn
 transformers
 huggingface_hub
 bitsandbytes

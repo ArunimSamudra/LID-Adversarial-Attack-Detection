@@ -123,7 +123,7 @@ def main(parser):
         original_output.append(batch['original_output'])
         perturbed_output.append(batch['perturbed_output'])
         ground_truth_output.append(batch['ground_truth_output'])
-        if batch['result_type'] == 'Successful':
+        if batch['result_type'][0] == 'Successful':
             result_type.append(1)
         else:
             result_type.append(0)
@@ -134,7 +134,6 @@ def main(parser):
                    f"output_tensors/{model_name_base}_all_layer_{layer}_original_text.pt")
         torch.save(torch.stack(perturbed_text_acts[layer]),
                    f"output_tensors/{model_name_base}_all_layer_{layer}_perturbed_text.pt")
-        print(f"output_tensors/{model_name_base}_all_layer_{layer}_perturbed_scores.pt")
         torch.save(torch.tensor(perturbed_scores),
                    f"output_tensors/{model_name_base}_all_layer_{layer}_perturbed_scores.pt")
         torch.save(torch.tensor(original_output),
