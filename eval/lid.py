@@ -4,6 +4,7 @@ import random
 import numpy as np
 import torch
 from matplotlib import pyplot as plt
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 from sklearn.neighbors import NearestNeighbors
 
@@ -63,12 +64,24 @@ def compute_lid(sample, neighbors, k_list):
             lids.append(lid)
     return np.mean(lids)  # Return average LID
 
+def train_lid_detector(X_train, y_train):
+    """
+    Train a logistic regression detector based on LID features.
+    Args:
+        X_train: Training features (LID values).
+        y_train: Training labels (adversarial=1, normal/noisy=0).
+    Returns:
+        Trained logistic regression model.
+    """
+    detector = LogisticRegression()
+    detector.fit(X_train, y_train)
+    return detector
+
 def main(parser):
     script_args = parser.parse_args()
     model_name_base = os.path.basename(script_args.model_name)
 
     layers = [i for i in range(32)]
-    p_value_for_layers = []
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     auc_roc_score = []
     avg_train_lid, avg_test_adv_lid, avg_test_clean_lid = [], [], []

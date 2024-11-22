@@ -7,7 +7,7 @@ import torch.nn as nn
 import argparse
 from datasets import load_dataset, Dataset
 from torch.utils.data import DataLoader
-from transformers import BitsAndBytesConfig, AutoConfig, AutoModelForCausalLM, AutoTokenizer
+from transformers import  AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 
 class Hook:
@@ -61,21 +61,22 @@ def get_acts(example, tokenizer, model, layers):
 
 
 def load_model(script_args):
-    quantization_config = BitsAndBytesConfig(
-        load_in_8bit=script_args.load_in_8bit
-        # load_in_4bit=script_args.load_in_4bit
-    )
+    # quantization_config = BitsAndBytesConfig(
+    #     load_in_8bit=script_args.load_in_8bit
+    #     # load_in_4bit=script_args.load_in_4bit
+    # )
     # Copy the model to each device
-    torch_dtype = torch.bfloat16
     torch.set_grad_enabled(False)
-    max_memory = {0: '15GiB', 1: '15GiB'}
 
     print("Loading model")
     model = AutoModelForCausalLM.from_pretrained(script_args.model_name, device_map="auto",
-                                                 max_memory=max_memory
-                                                 , quantization_config=quantization_config
+                                                 torch_dtype=torch.float16
                                                  )
-
+    # quantized_model = torch.quantization.quantize_dynamic(
+    #     model,
+    #     {torch.nn.Linear},  # Quantize only Linear layers
+    #     dtype=torch.qint8,
+    # )
     num_layers = len(model.model.layers)
     print("Loading tokenizer")
     tokenizer = AutoTokenizer.from_pretrained(script_args.model_name)
@@ -85,8 +86,8 @@ def load_model(script_args):
 
 def main(parser):
     # Load arguments
-    if not os.path.exists('output_tensors'):
-        os.mkdir('output_tensors')
+    if not os.path.exists('output_tensors_bae'):
+        os.mkdir('output_tensors_bae')
     script_args = parser.parse_args()
     model_name_base = os.path.basename(script_args.model_name)
     # Load model, tokenizer
@@ -131,25 +132,25 @@ def main(parser):
     # Write to disk based on layers
     for layer in layers:
         torch.save(torch.stack(original_text_acts[layer]),
-                   f"output_tensors/{model_name_base}_all_layer_{layer}_original_text.pt")
+                   f"output_tensors_bae/{model_name_base}_all_layer_{layer}_original_text.pt")
         torch.save(torch.stack(perturbed_text_acts[layer]),
-                   f"output_tensors/{model_name_base}_all_layer_{layer}_perturbed_text.pt")
+                   f"output_tensors_bae/{model_name_base}_all_layer_{layer}_perturbed_text.pt")
         torch.save(torch.tensor(perturbed_scores),
-                   f"output_tensors/{model_name_base}_all_layer_{layer}_perturbed_scores.pt")
+                   f"output_tensors_bae/{model_name_base}_all_layer_{layer}_perturbed_scores.pt")
         torch.save(torch.tensor(original_output),
-                   f"output_tensors/{model_name_base}_all_layer_{layer}_original_output.pt")
+                   f"output_tensors_bae/{model_name_base}_all_layer_{layer}_original_output.pt")
         torch.save(torch.tensor(perturbed_output),
-                   f"output_tensors/{model_name_base}_all_layer_{layer}_perturbed_output.pt")
+                   f"output_tensors_bae/{model_name_base}_all_layer_{layer}_perturbed_output.pt")
         torch.save(torch.tensor(ground_truth_output),
-                   f"output_tensors/{model_name_base}_all_layer_{layer}_ground_truth_output.pt")
-        torch.save(torch.tensor(result_type), f"output_tensors/{model_name_base}_all_layer_{layer}_result_type.pt")
+                   f"output_tensors_bae/{model_name_base}_all_layer_{layer}_ground_truth_output.pt")
+        torch.save(torch.tensor(result_type), f"output_tensors_bae/{model_name_base}_all_layer_{layer}_result_type.pt")
 
 
 if __name__ == '__main__':
-    os.environ['HF_TOKEN'] = "my token"
+    #os.environ['HF_TOKEN'] = "my token"
     # Log in using the token from environment variables
-    huggingface_token = os.environ.get('HF_TOKEN')
-    login(token=huggingface_token)
+    # huggingface_token = os.environ.get('HF_TOKEN')
+    # login(token=huggingface_token)
 
     # df = pd.read_csv('../data/custom_attack_log.csv')
 
