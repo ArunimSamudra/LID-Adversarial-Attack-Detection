@@ -86,8 +86,8 @@ def load_model(script_args):
 
 def main(parser):
     # Load arguments
-    if not os.path.exists('output_tensors_bae'):
-        os.mkdir('output_tensors_bae')
+    if not os.path.exists('output_tensors_ai'):
+        os.mkdir('output_tensors_ai')
     script_args = parser.parse_args()
     model_name_base = os.path.basename(script_args.model_name)
     # Load model, tokenizer
@@ -120,30 +120,30 @@ def main(parser):
             original_text_acts[layer].append(original_text_act[layer][0][0, :])
 
         ## get all other features
-        perturbed_scores.append(batch['perturbed_score'])
-        original_output.append(batch['original_output'])
-        perturbed_output.append(batch['perturbed_output'])
-        ground_truth_output.append(batch['ground_truth_output'])
-        if batch['result_type'][0] == 'Successful':
-            result_type.append(1)
-        else:
-            result_type.append(0)
+        # perturbed_scores.append(batch['perturbed_score'])
+        # original_output.append(batch['original_output'])
+        # perturbed_output.append(batch['perturbed_output'])
+        # ground_truth_output.append(batch['ground_truth_output'])
+        # if batch['result_type'][0] == 'Successful':
+        #     result_type.append(1)
+        # else:
+        #     result_type.append(0)
 
     # Write to disk based on layers
     for layer in layers:
         torch.save(torch.stack(original_text_acts[layer]),
-                   f"output_tensors_bae/{model_name_base}_all_layer_{layer}_original_text.pt")
+                   f"output_tensors_ai/{model_name_base}_all_layer_{layer}_original_text.pt")
         torch.save(torch.stack(perturbed_text_acts[layer]),
-                   f"output_tensors_bae/{model_name_base}_all_layer_{layer}_perturbed_text.pt")
-        torch.save(torch.tensor(perturbed_scores),
-                   f"output_tensors_bae/{model_name_base}_all_layer_{layer}_perturbed_scores.pt")
-        torch.save(torch.tensor(original_output),
-                   f"output_tensors_bae/{model_name_base}_all_layer_{layer}_original_output.pt")
-        torch.save(torch.tensor(perturbed_output),
-                   f"output_tensors_bae/{model_name_base}_all_layer_{layer}_perturbed_output.pt")
-        torch.save(torch.tensor(ground_truth_output),
-                   f"output_tensors_bae/{model_name_base}_all_layer_{layer}_ground_truth_output.pt")
-        torch.save(torch.tensor(result_type), f"output_tensors_bae/{model_name_base}_all_layer_{layer}_result_type.pt")
+                   f"output_tensors_ai/{model_name_base}_all_layer_{layer}_perturbed_text.pt")
+        # torch.save(torch.tensor(perturbed_scores),
+        #            f"output_tensors_bae/{model_name_base}_all_layer_{layer}_perturbed_scores.pt")
+        # torch.save(torch.tensor(original_output),
+        #            f"output_tensors_bae/{model_name_base}_all_layer_{layer}_original_output.pt")
+        # torch.save(torch.tensor(perturbed_output),
+        #            f"output_tensors_bae/{model_name_base}_all_layer_{layer}_perturbed_output.pt")
+        # torch.save(torch.tensor(ground_truth_output),
+        #            f"output_tensors_bae/{model_name_base}_all_layer_{layer}_ground_truth_output.pt")
+        # torch.save(torch.tensor(result_type), f"output_tensors_bae/{model_name_base}_all_layer_{layer}_result_type.pt")
 
 
 if __name__ == '__main__':

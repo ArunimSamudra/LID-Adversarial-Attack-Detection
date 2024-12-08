@@ -9,3 +9,4 @@ tqdm
 pandas
 datasets
 accelerate
+openai

@@ -7,10 +7,27 @@ import nltk
 import ssl
 from tqdm import tqdm
 import pandas as pd
-
+from openai import OpenAI
+client = OpenAI()
 ssl._create_default_https_context = ssl._create_unverified_context
-nltk.download('averaged_perceptron_tagger_eng')
-nltk.download('universal_tagset')
+# nltk.download('averaged_perceptron_tagger_eng')
+# nltk.download('universal_tagset')
+
+
+def get_paraphrased(text):
+    completion = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are an expert paraphraser. Rewrite the text provided to retain its meaning while using different wording and structure."},
+            {
+                "role": "user",
+                "content": f"Please paraphrase the following text: \"{text}\""
+            }
+        ]
+    )
+
+    return completion.choices[0].message.content
+
 
 if __name__ == '__main__':
     # Load IMDb dataset from CSV
@@ -29,16 +46,16 @@ if __name__ == '__main__':
     model = AutoModelForSequenceClassification.from_pretrained("textattack/bert-base-uncased-imdb")
     tokenizer = AutoTokenizer.from_pretrained("textattack/bert-base-uncased-imdb")
 
-    print("Wrap the model for TextAttack")
-    # Wrap the model for TextAttack
-    model_wrapper = HuggingFaceModelWrapper(model, tokenizer)
-
-    # Set up adversarial attack methods
-    attacks = {
-        # "BAE": BAEGarg2019.build(model_wrapper),
-        # "DeepWordBug": DeepWordBugGao2018.build(model_wrapper)
-        "TextFooler": TextFoolerJin2019.build(model_wrapper)
-    }
+    # print("Wrap the model for TextAttack")
+    # # Wrap the model for TextAttack
+    # model_wrapper = HuggingFaceModelWrapper(model, tokenizer)
+    #
+    # # Set up adversarial attack methods
+    # attacks = {
+    #     # "BAE": BAEGarg2019.build(model_wrapper),
+    #     # "DeepWordBug": DeepWordBugGao2018.build(model_wrapper)
+    #     "TextFooler": TextFoolerJin2019.build(model_wrapper)
+    # }
 
     print("Collect clean examples in final data list")
     # Collect clean examples in final data list
@@ -52,35 +69,34 @@ if __name__ == '__main__':
             "attack_score": None
         })
 
-    custom_dataset = [(row['review'], row['label']) for _, row in adversarial_candidates.iterrows()]
-
+    # custom_dataset = [(row['review'], row['label']) for _, row in adversarial_candidates.iterrows()]
     # Wrap in a TextAttack Dataset
-    custom_textattack_dataset = datasets.Dataset(custom_dataset)
-
-    print("Set up attack and attack arguments")
-    # Set up attack and attack arguments
-    attack = BAEGarg2019.build(model_wrapper)
-    attack_args = AttackArgs(
-        num_examples=333,
-        num_workers_per_device=4,
-        log_to_csv="custom_attack_log_tf.csv",
-        checkpoint_interval=50,
-        checkpoint_dir="custom_checkpoints"
-    )
-
-    print("Run the attack")
-    # Run the attack
-    attacker = Attacker(attack, custom_textattack_dataset, attack_args)
-    results = attacker.attack_dataset()
-
-    for result in results:
-        data.append({
-            "text": result.perturbed_result.attacked_text.text,
-            "label": result.original_result.ground_truth_output,
-            "is_clean": False,
-            "attack_method": "TF",
-            "attack_score": round(result.perturbed_result.score, 4)
-        })
+    # custom_textattack_dataset = datasets.Dataset(custom_dataset)
+    #
+    # print("Set up attack and attack arguments")
+    # # Set up attack and attack arguments
+    # attack = TextFoolerJin2019.build(model_wrapper)
+    # attack_args = AttackArgs(
+    #     num_examples=333,
+    #     num_workers_per_device=4,
+    #     log_to_csv="custom_attack_log_tf.csv",
+    #     checkpoint_interval=50,
+    #     checkpoint_dir="custom_checkpoints"
+    # )
+    #
+    # print("Run the attack")
+    # # Run the attack
+    # attacker = Attacker(attack, custom_textattack_dataset, attack_args)
+    # results = attacker.attack_dataset()
+    #
+    # for result in results:
+    #     data.append({
+    #         "text": result.perturbed_result.attacked_text.text,
+    #         "label": result.original_result.ground_truth_output,
+    #         "is_clean": False,
+    #         "attack_method": "TF",
+    #         "attack_score": round(result.perturbed_result.score, 4)
+    #     })
 
     # Generate adversarial examples
     # for attack_name, attack in attacks.items():
@@ -115,7 +131,22 @@ if __name__ == '__main__':
     #         except Exception as e:
     #             print(f"Failed to generate adversarial example with {attack_name}: {e}")
 
+    # Generate paraphrased examples
+    for _, row in tqdm(adversarial_candidates.iterrows(), desc=f"Generating paraphrased examples"):
+        try:
+            paraphrased_example = get_paraphrased(row['review'])
+            data.append({
+                "text": paraphrased_example,
+                "label": row["label"],
+                "is_clean": False,
+                "attack_method": "None",
+                "attack_score":  None
+            })
+            print(f"Generated new paraphrased example")
+        except Exception as e:
+            print(f"Failed to generate paraphrased example: {e}")
+
     # Save final dataset
     df = pd.DataFrame(data).sample(frac=1).reset_index(drop=True)
-    df.to_csv("imdb_with_adversarial_examples_tf.csv", index=False)
+    df.to_csv("imdb_with_paraphrased_examples.csv", index=False)
     print("Dataset with adversarial examples created and saved.")
