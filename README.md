@@ -2,17 +2,6 @@
 
 This repository implements adversarial attack detection using Local Intrinsic Dimensionality (LID). The approach is inspired by the paper "[Characterizing Adversarial Subspaces Using Local Intrinsic Dimensionality](https://arxiv.org/abs/1801.02613)" by Ma et al.
 
-## Table of Contents
-
-- [Introduction](#introduction)
-- [Installation](#installation)
-- [Usage](#usage)
-  - [Data Preparation](#data-preparation)
-  - [Training the Model](#training-the-model)
-  - [Generating Adversarial Examples](#generating-adversarial-examples)
-  - [Detecting Adversarial Examples](#detecting-adversarial-examples)
-- [Results](#results)
-- [References](#references)
 
 ## Introduction
 
