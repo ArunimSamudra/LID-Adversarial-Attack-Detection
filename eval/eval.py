@@ -153,7 +153,7 @@ def main(parser):
         clean = original.cpu().numpy().astype('float32')
         adv = attack.cpu().numpy().astype('float32')
 
-        k = 10
+        k = 15
         lids_clean = [compute_lid(np.array([x]), clean, k) for x in clean]
         lids_adv = [compute_lid(np.array([x]), clean, k) for x in adv]
 
